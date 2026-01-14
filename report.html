@@ -7,166 +7,204 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <style>
-        :root { --primary: #1a237e; --secondary: #2e7d32; --bg: #f5f5f5; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); margin: 0; padding-bottom: 100px; -webkit-tap-highlight-color: transparent; }
+        :root { --primary: #1a237e; --secondary: #2e7d32; --bg: #f0f2f5; --border: #ced4da; }
         
-        /* Header */
-        .header { background: var(--primary); color: white; padding: 25px; text-align: center; border-bottom: 5px solid var(--secondary); box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
-        .header h2 { margin: 0; font-size: 1.4rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-        .container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
+        /* APP LAYOUT STRUCTURE */
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background: var(--bg); 
+            margin: 0; 
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
         
-        /* Card Style */
-        .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        
-        /* Inputs */
-        .form-row { display: flex; gap: 10px; margin-bottom: 15px; }
-        .form-group { flex: 1; }
-        .form-group label { display: block; font-size: 0.85rem; color: #444; margin-bottom: 6px; font-weight: bold; }
-        .form-group input { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 10px; box-sizing: border-box; font-size: 1rem; -webkit-appearance: none; transition: border 0.2s; }
-        .form-group input:focus { border-color: var(--primary); outline: none; }
-        .required-mark { color: red; margin-left: 3px; }
+        /* FIXED HEADER */
+        .app-header { 
+            background: var(--primary); color: white; padding: 15px; text-align: center; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 10;
+        }
+        .app-header h2 { margin: 0; font-size: 1.2rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
 
-        /* Table Style */
-        .table-header { display: flex; gap: 10px; margin-bottom: 8px; font-size: 0.8rem; color: #777; font-weight: bold; padding: 0 5px; }
-        .lbl-firma { flex: 3; }
-        .lbl-betrag { flex: 1; text-align: right; }
+        /* SCROLLABLE CONTENT */
+        .app-content { 
+            flex-grow: 1; overflow-y: auto; padding: 15px; -webkit-overflow-scrolling: touch; padding-bottom: 20px;
+        }
+
+        /* FIXED FOOTER */
+        .app-footer { 
+            background: white; padding: 12px 15px; border-top: 1px solid #ddd; flex-shrink: 0; display: flex; gap: 10px; padding-bottom: env(safe-area-inset-bottom);
+        }
+
+        /* CARD STYLES */
+        .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 15px; }
+
+        /* INPUTS */
+        label { display: block; font-size: 0.85rem; color: #555; margin-bottom: 6px; font-weight: 600; }
+        input { 
+            width: 100%; 
+            padding: 12px; /* Comfortable padding */
+            border: 1px solid var(--border); 
+            border-radius: 10px; 
+            font-size: 16px; 
+            background: #fff;
+        }
+        input:focus { border-color: var(--primary); outline: none; background: #f8f9fa; }
+        
+        .form-row-top { display: flex; gap: 10px; }
+        .form-col { flex: 1; }
+
+        /* --- TABLE FIXES --- */
+        .table-header { 
+            display: flex; gap: 8px; margin-bottom: 8px; font-size: 0.8rem; color: #777; font-weight: bold; align-items: center;
+        }
+        /* Placeholders to align with rows */
+        .th-num { width: 20px; } 
+        .th-firma { flex: 1; }
+        .th-betrag { width: 95px; text-align: right; } /* Matches input width */
 
         .entry-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
-        .entry-num { font-size: 0.8rem; color: #bbb; width: 15px; }
+        .entry-num { font-size: 0.8rem; color: #999; width: 20px; font-weight: bold; text-align: center; }
         
-        /* CUSTOM INPUT SIZES */
         .inp-firma { 
-            flex: 3; 
-            padding: 12px; /* Comfortable padding */
-            height: 50px;  /* Taller width */
-            border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; box-sizing: border-box; 
+            flex: 1; 
+            min-width: 0;
         }
         .inp-betrag { 
-            flex: 1; 
-            padding: 5px; 
-            height: 38px; /* Shorter height as requested */
-            text-align: right; font-weight: bold; 
-            border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; box-sizing: border-box;
+            width: 95px; /* Increased width */
+            text-align: right; 
+            font-weight: bold; 
+            color: var(--primary);
+            padding: 12px 10px; /* Better internal padding */
         }
-
-        /* Calculation Section */
-        .calc-box { background: #e8f5e9; padding: 15px; border-radius: 12px; border: 1px solid #c8e6c9; }
-        .calc-row { display: flex; justify-content: space-between; margin-bottom: 8px; align-items: center; }
-        .calc-row label { font-weight: 600; color: var(--primary); }
-        .calc-row input { width: 100px; padding: 8px; border-radius: 6px; border: 1px solid #ccc; text-align: right; font-weight: bold; }
-        .calc-row.total { border-top: 2px dashed #aaa; padding-top: 10px; margin-top: 5px; }
-        .total-display { font-size: 1.4rem; font-weight: 900; color: var(--primary); }
-
-        /* Signature */
-        .sig-box { margin-top: 20px; text-align: center; }
-        canvas { border: 2px dashed #ccc; border-radius: 10px; background: white; touch-action: none; width: 100%; height: 150px; cursor: crosshair; }
-        .btn-clear { background: #999; color: white; border: none; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; margin-top: 5px; cursor: pointer; }
-
-        /* Actions */
-        .actions { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); display: flex; gap: 10px; justify-content: space-around; z-index: 100; }
-        .btn { flex: 1; padding: 14px; border: none; border-radius: 12px; font-weight: bold; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .btn-pdf { background: var(--primary); color: white; }
-        .btn-email { background: var(--secondary); color: white; }
-        .btn:active { transform: scale(0.98); }
         
-        .upload-box { margin-top: 20px; padding: 15px; border: 2px dashed #ccc; border-radius: 10px; text-align: center; background: #fff; }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+
+        /* CALCULATION BOX */
+        .calc-box { background: #e8eaf6; padding: 15px; border-radius: 10px; }
+        .calc-row { display: flex; justify-content: space-between; margin-bottom: 10px; align-items: center; font-size: 0.95rem; }
+        .calc-row input { width: 100px; padding: 8px; text-align: right; font-weight: bold; }
+        .calc-row.total { border-top: 1px solid #bdc3c7; padding-top: 12px; margin-top: 5px; }
+        .total-text { font-size: 1.3rem; font-weight: 900; color: var(--primary); }
+
+        /* SIGNATURE */
+        .sig-container { border: 2px dashed #bbb; border-radius: 10px; background: #fff; height: 130px; position: relative; }
+        canvas { width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
+        .sig-clear { position: absolute; bottom: 8px; right: 8px; background: #eee; border: none; padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; color: #555; font-weight: bold; }
+
+        /* BUTTONS */
+        .btn { flex: 1; border: none; border-radius: 12px; padding: 14px; font-size: 1rem; font-weight: bold; color: white; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: opacity 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn:active { opacity: 0.8; transform: scale(0.99); }
+        .btn-pdf { background: var(--primary); }
+        .btn-email { background: var(--secondary); }
+
+        .upload-wrapper { text-align: center; border: 2px dashed #ddd; padding: 15px; border-radius: 10px; margin-top: 10px; background: #fafafa; }
     </style>
 </head>
 <body>
 
-<div class="header">
-    <h2>Tagesbericht / Abrechnung</h2>
-</div>
-
-<div class="container">
-    <div class="card">
-        <div class="form-group" style="margin-bottom:10px;">
-            <label>Fahrer Name (Name) <span class="required-mark">*</span></label>
-            <input type="text" id="driverName" placeholder="...">
-        </div>
-        <div class="form-row">
-            <div class="form-group">
-                <label>Kennzeichen (Plate) <span class="required-mark">*</span></label>
-                <input type="text" id="plate" placeholder="ZH-...">
-            </div>
-            <div class="form-group">
-                <label>Datum (Date)</label>
-                <input type="date" id="date">
-            </div>
-        </div>
+    <div class="app-header">
+        <h2>Tagesbericht</h2>
     </div>
 
-    <div class="card">
-        <div class="table-header">
-            <span class="lbl-firma">Firma / Kunde</span>
-            <span class="lbl-betrag">Betrag (CHF)</span>
-        </div>
+    <div class="app-content">
         
-        <div id="rows-container">
+        <div class="card">
+            <div style="margin-bottom: 15px;">
+                <label>Fahrer Name *</label>
+                <input type="text" id="driverName" placeholder="Name des Fahrers">
             </div>
+            <div class="form-row-top">
+                <div class="form-col">
+                    <label>Kennzeichen *</label>
+                    <input type="text" id="plate" placeholder="ZH-...">
+                </div>
+                <div class="form-col">
+                    <label>Datum</label>
+                    <input type="date" id="date">
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="padding-top: 10px;">
+            <div class="table-header">
+                <span class="th-num">#</span>
+                <span class="th-firma">Firma / Kunde</span>
+                <span class="th-betrag">Betrag (CHF)</span>
+            </div>
+            
+            <div id="rows-container">
+                </div>
+        </div>
+
+        <div class="card">
+            <div class="calc-box">
+                <div class="calc-row">
+                    <span>Brutto Total:</span>
+                    <span id="bruttoSum" style="font-weight:bold;">0.00</span>
+                </div>
+                <div class="calc-row">
+                    <span style="color:#c62828;">- Tanken (Fuel):</span>
+                    <input type="number" inputmode="decimal" id="tanken" placeholder="0.00" oninput="calcTotal()">
+                </div>
+                <div class="calc-row">
+                    <span style="color:#c62828;">- Auszahlung:</span>
+                    <input type="number" inputmode="decimal" id="auszahlung" placeholder="0.00" oninput="calcTotal()">
+                </div>
+                <div class="calc-row total">
+                    <span>NETTO:</span>
+                    <span class="total-text"><span id="nettoSum">0.00</span> CHF</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <label>📸 Foto / Beleg (Optional)</label>
+            <div class="upload-wrapper">
+                <input type="file" id="attachment" accept="image/*,application/pdf" style="width:100%;">
+            </div>
+
+            <label style="margin-top:20px;">Unterschrift *</label>
+            <div class="sig-container">
+                <canvas id="sigCanvas"></canvas>
+                <button class="sig-clear" onclick="clearSig()">Löschen</button>
+            </div>
+        </div>
+
     </div>
 
-    <div class="calc-box">
-        <div class="calc-row">
-            <label>Brutto Total:</label>
-            <span id="bruttoSum">0.00</span>
-        </div>
-        <div class="calc-row">
-            <label style="color:#d32f2f;">- Tanken (Fuel):</label>
-            <input type="number" id="tanken" placeholder="0.00" oninput="calcTotal()">
-        </div>
-        <div class="calc-row">
-            <label style="color:#d32f2f;">- Auszahlung (Cash):</label>
-            <input type="number" id="auszahlung" placeholder="0.00" oninput="calcTotal()">
-        </div>
-        <div class="calc-row total">
-            <label>NETTO TOTAL:</label>
-            <div class="total-display"><span id="nettoSum">0.00</span> CHF</div>
-        </div>
+    <div class="app-footer">
+        <button class="btn btn-pdf" onclick="sharePDF()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+            PDF
+        </button>
+        <button class="btn btn-email" onclick="sendEmail()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            Senden
+        </button>
     </div>
-
-    <div class="upload-box">
-        <label>📸 Foto / Beleg (Optional)</label>
-        <input type="file" id="attachment" accept="image/*,application/pdf" style="display:block; margin:10px auto;">
-    </div>
-
-    <div class="sig-box">
-        <label style="font-weight:bold; color:#555;">Unterschrift (Signature) <span class="required-mark">*</span></label>
-        <canvas id="sigCanvas"></canvas>
-        <button class="btn-clear" onclick="clearSig()">Löschen</button>
-    </div>
-</div>
-
-<div class="actions">
-    <button class="btn btn-pdf" onclick="sharePDF()">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-        PDF / Share
-    </button>
-    <button class="btn btn-email" onclick="sendEmail()">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-        Senden
-    </button>
-</div>
 
 <script>
-    let isSigned = false; // To track if signature exists
+    let isSigned = false;
 
-    // 1. Generate 15 Rows
+    // 1. Generate Rows
     const rowsContainer = document.getElementById('rows-container');
     for (let i = 1; i <= 15; i++) {
         rowsContainer.innerHTML += `
         <div class="entry-row">
             <div class="entry-num">${i}.</div>
-            <input type="text" class="inp-firma" id="firma_${i}" placeholder="...">
-            <input type="number" class="inp-betrag" id="betrag_${i}" placeholder="0.00" oninput="calcTotal()">
+            <input type="text" class="inp-firma" id="firma_${i}" placeholder="Firma...">
+            <input type="number" inputmode="decimal" class="inp-betrag" id="betrag_${i}" placeholder="0.00" oninput="calcTotal()">
         </div>`;
     }
 
-    // 2. Set Date to Today
+    // 2. Set Date
     document.getElementById('date').valueAsDate = new Date();
 
-    // 3. Calculation Logic
+    // 3. Calculation
     function calcTotal() {
         let sum = 0;
         for (let i = 1; i <= 15; i++) {
@@ -183,28 +221,30 @@
         return { sum, tanken, auszahlung, netto };
     }
 
-    // 4. Signature Logic
+    // 4. Signature
     const canvas = document.getElementById('sigCanvas');
     const ctx = canvas.getContext('2d');
     let drawing = false;
 
     function resizeCanvas() {
-        const ratio = Math.max(window.devicePixelRatio || 1, 1);
-        canvas.width = canvas.offsetWidth * ratio;
-        canvas.height = canvas.offsetHeight * ratio;
-        ctx.scale(ratio, ratio);
+        const rect = canvas.parentElement.getBoundingClientRect();
+        canvas.width = rect.width;
+        canvas.height = rect.height;
     }
-    window.onresize = resizeCanvas;
-    setTimeout(resizeCanvas, 100);
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
 
     // Drawing Events
     function startDraw(e) {
         e.preventDefault();
         drawing = true;
-        isSigned = true; // Mark as signed
+        isSigned = true;
         const pos = getPos(e);
         ctx.beginPath();
         ctx.moveTo(pos.x, pos.y);
+        ctx.lineWidth = 2;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "#000";
     }
     function moveDraw(e) {
         e.preventDefault();
@@ -214,6 +254,7 @@
         ctx.stroke();
     }
     function endDraw() { drawing = false; }
+    
     function getPos(e) {
         const rect = canvas.getBoundingClientRect();
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -233,7 +274,6 @@
         isSigned = false;
     }
 
-    // Validation Function
     function validateForm() {
         const name = document.getElementById('driverName').value.trim();
         const plate = document.getElementById('plate').value.trim();
@@ -244,20 +284,18 @@
         return true;
     }
 
-    // 5. PDF Generation & Share
+    // 5. PDF Generation
     async function generatePDFObject() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         const primaryColor = [26, 35, 126];
 
-        // Header
         doc.setFillColor(...primaryColor);
         doc.rect(0, 0, 210, 20, 'F');
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(16);
         doc.text("TAGESBERICHT / ABRECHNUNG", 105, 13, { align: "center" });
 
-        // Info
         doc.setTextColor(0, 0, 0);
         doc.setFontSize(10);
         const name = document.getElementById('driverName').value || "-";
@@ -268,7 +306,6 @@
         doc.text(`Kennzeichen: ${plate}`, 14, 36);
         doc.text(`Datum: ${date}`, 150, 30);
 
-        // Table Data
         let tableData = [];
         for (let i = 1; i <= 15; i++) {
             let f = document.getElementById(`firma_${i}`).value;
@@ -306,8 +343,8 @@
 
         const sigImg = canvas.toDataURL('image/png');
         if (isSigned) {
-            doc.text("Unterschrift:", 14, finalY + 30);
-            doc.addImage(sigImg, 'PNG', 14, finalY + 32, 50, 25);
+            doc.text("Unterschrift:", 14, finalY + 35);
+            doc.addImage(sigImg, 'PNG', 14, finalY + 37, 50, 25);
         }
 
         return doc;
@@ -320,24 +357,19 @@
         const blob = doc.output('blob');
         const file = new File([blob], "Abrechnung.pdf", { type: "application/pdf" });
 
-        // Try Native Share
         if (navigator.canShare && navigator.canShare({ files: [file] })) {
             try {
                 await navigator.share({
                     files: [file],
                     title: 'Abrechnung',
-                    text: 'Hier ist meine Abrechnung.'
+                    text: 'Tagesbericht'
                 });
-            } catch (err) {
-                console.log("Share failed/cancelled", err);
-            }
+            } catch (err) { console.log("Share skipped"); }
         } else {
-            // Fallback for Desktop
             doc.save("Abrechnung.pdf");
         }
     }
 
-    // 6. Send Email Logic
     async function sendEmail() {
         if (!validateForm()) return;
 
@@ -369,13 +401,10 @@
             const res = await fetch("https://api.web3forms.com/submit", { method: "POST", body: formData });
             if (res.ok) {
                 alert("✅ Erfolgreich gesendet!");
-                // clearSig(); // Optional: reset after send
             } else {
                 alert("❌ Fehler beim Senden.");
             }
-        } catch (e) {
-            alert("Fehler.");
-        }
+        } catch (e) { alert("Fehler."); }
         btn.innerHTML = oldText;
         btn.disabled = false;
     }
