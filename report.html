@@ -43,41 +43,38 @@
 
         /* INPUTS */
         label { display: block; font-size: 0.85rem; color: #555; margin-bottom: 6px; font-weight: 600; }
-        input { 
+        input, textarea { 
             width: 100%; 
-            padding: 12px; /* Comfortable padding */
+            padding: 12px; 
             border: 1px solid var(--border); 
             border-radius: 10px; 
             font-size: 16px; 
             background: #fff;
+            font-family: inherit;
         }
-        input:focus { border-color: var(--primary); outline: none; background: #f8f9fa; }
+        input:focus, textarea:focus { border-color: var(--primary); outline: none; background: #f8f9fa; }
         
         .form-row-top { display: flex; gap: 10px; }
         .form-col { flex: 1; }
 
-        /* --- TABLE FIXES --- */
+        /* TABLE FIXES */
         .table-header { 
             display: flex; gap: 8px; margin-bottom: 8px; font-size: 0.8rem; color: #777; font-weight: bold; align-items: center;
         }
-        /* Placeholders to align with rows */
         .th-num { width: 20px; } 
         .th-firma { flex: 1; }
-        .th-betrag { width: 95px; text-align: right; } /* Matches input width */
+        .th-betrag { width: 95px; text-align: right; }
 
         .entry-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
         .entry-num { font-size: 0.8rem; color: #999; width: 20px; font-weight: bold; text-align: center; }
         
-        .inp-firma { 
-            flex: 1; 
-            min-width: 0;
-        }
+        .inp-firma { flex: 1; min-width: 0; }
         .inp-betrag { 
-            width: 95px; /* Increased width */
+            width: 95px; 
             text-align: right; 
             font-weight: bold; 
             color: var(--primary);
-            padding: 12px 10px; /* Better internal padding */
+            padding: 12px 10px;
         }
         
         input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
@@ -90,7 +87,7 @@
         .calc-row.total { border-top: 1px solid #bdc3c7; padding-top: 12px; margin-top: 5px; }
         .total-text { font-size: 1.3rem; font-weight: 900; color: var(--primary); }
 
-        /* SIGNATURE */
+        /* SIGNATURE & NOTE */
         .sig-container { border: 2px dashed #bbb; border-radius: 10px; background: #fff; height: 130px; position: relative; }
         canvas { width: 100%; height: 100%; touch-action: none; cursor: crosshair; }
         .sig-clear { position: absolute; bottom: 8px; right: 8px; background: #eee; border: none; padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; color: #555; font-weight: bold; }
@@ -135,7 +132,6 @@
                 <span class="th-firma">Firma / Kunde</span>
                 <span class="th-betrag">Betrag (CHF)</span>
             </div>
-            
             <div id="rows-container">
                 </div>
         </div>
@@ -167,6 +163,9 @@
                 <input type="file" id="attachment" accept="image/*,application/pdf" style="width:100%;">
             </div>
 
+            <label style="margin-top:20px;">Bemerkungen (Note)</label>
+            <textarea id="driverNote" rows="2" placeholder="Z.B. Stau, Extra Service..."></textarea>
+
             <label style="margin-top:20px;">Unterschrift *</label>
             <div class="sig-container">
                 <canvas id="sigCanvas"></canvas>
@@ -190,7 +189,6 @@
 <script>
     let isSigned = false;
 
-    // 1. Generate Rows
     const rowsContainer = document.getElementById('rows-container');
     for (let i = 1; i <= 15; i++) {
         rowsContainer.innerHTML += `
@@ -201,10 +199,8 @@
         </div>`;
     }
 
-    // 2. Set Date
     document.getElementById('date').valueAsDate = new Date();
 
-    // 3. Calculation
     function calcTotal() {
         let sum = 0;
         for (let i = 1; i <= 15; i++) {
@@ -221,7 +217,7 @@
         return { sum, tanken, auszahlung, netto };
     }
 
-    // 4. Signature
+    // Signature
     const canvas = document.getElementById('sigCanvas');
     const ctx = canvas.getContext('2d');
     let drawing = false;
@@ -234,7 +230,6 @@
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
-    // Drawing Events
     function startDraw(e) {
         e.preventDefault();
         drawing = true;
@@ -277,14 +272,13 @@
     function validateForm() {
         const name = document.getElementById('driverName').value.trim();
         const plate = document.getElementById('plate').value.trim();
-        
         if (!name) { alert("Bitte Fahrer Name eingeben!"); return false; }
         if (!plate) { alert("Bitte Kennzeichen eingeben!"); return false; }
         if (!isSigned) { alert("Bitte unterschreiben!"); return false; }
         return true;
     }
 
-    // 5. PDF Generation
+    // PDF Generation
     async function generatePDFObject() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
@@ -301,6 +295,8 @@
         const name = document.getElementById('driverName').value || "-";
         const plate = document.getElementById('plate').value || "-";
         const date = document.getElementById('date').value || "-";
+        // Get Note
+        const note = document.getElementById('driverNote').value || "-";
 
         doc.text(`Fahrer: ${name}`, 14, 30);
         doc.text(`Kennzeichen: ${plate}`, 14, 36);
@@ -320,8 +316,13 @@
             head: [['#', 'Firma / Kunde', 'Betrag (CHF)']],
             body: tableData,
             theme: 'striped',
-            headStyles: { fillColor: primaryColor },
-            columnStyles: { 2: { halign: 'right' } }
+            headStyles: { fillColor: primaryColor, halign: 'left' },
+            // FIX: Align Column 2 (Betrag) to Right for HEADER and BODY
+            columnStyles: { 
+                0: { cellWidth: 10 },
+                1: { },
+                2: { halign: 'right' } 
+            }
         });
 
         let finalY = doc.lastAutoTable.finalY + 10;
@@ -341,10 +342,21 @@
         doc.setFont("helvetica", "bold");
         doc.text(`NETTO: ${calcs.netto.toFixed(2)} CHF`, 190, finalY + 22, { align: "right" });
 
+        // Add Note to PDF
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.text("Bemerkungen:", 14, finalY + 30);
+        doc.setTextColor(80, 80, 80);
+        // Split text if too long
+        const splitNote = doc.splitTextToSize(note, 100); 
+        doc.text(splitNote, 14, finalY + 35);
+        doc.setTextColor(0, 0, 0);
+
+        // Add Signature (positioned lower to make room for note)
         const sigImg = canvas.toDataURL('image/png');
         if (isSigned) {
-            doc.text("Unterschrift:", 14, finalY + 35);
-            doc.addImage(sigImg, 'PNG', 14, finalY + 37, 50, 25);
+            doc.text("Unterschrift:", 14, finalY + 55);
+            doc.addImage(sigImg, 'PNG', 14, finalY + 58, 50, 25);
         }
 
         return doc;
@@ -380,6 +392,7 @@
 
         const name = document.getElementById('driverName').value;
         const date = document.getElementById('date').value;
+        const note = document.getElementById('driverNote').value;
 
         try {
             const doc = await generatePDFObject();
@@ -390,7 +403,8 @@
             formData.append("access_key", "817b5739-ed89-4340-9674-57d210b081b7"); 
             
             formData.append("subject", `Abrechnung: ${name} - ${date}`);
-            formData.append("message", `Fahrer: ${name}\nDatum: ${date}\nNetto: ${document.getElementById('nettoSum').innerText} CHF`);
+            // Added Note to Email Message
+            formData.append("message", `Fahrer: ${name}\nDatum: ${date}\nBemerkungen: ${note}\n\nNetto: ${document.getElementById('nettoSum').innerText} CHF`);
             formData.append("attachment", pdfBlob, `Abrechnung_${name}.pdf`);
 
             const fileInput = document.getElementById('attachment');
