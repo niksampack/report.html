@@ -3,31 +3,52 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>NIK Driver Report</title>
+    <title>Driver Report</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
     <style>
         :root { --primary: #1a237e; --secondary: #2e7d32; --bg: #f5f5f5; }
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); margin: 0; padding-bottom: 80px; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background: var(--bg); margin: 0; padding-bottom: 100px; -webkit-tap-highlight-color: transparent; }
         
         /* Header */
-        .header { background: var(--primary); color: white; padding: 20px; text-align: center; border-bottom: 5px solid var(--secondary); box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
-        .header h1 { margin: 0; font-size: 1.5rem; font-weight: 800; letter-spacing: 1px; }
+        .header { background: var(--primary); color: white; padding: 25px; text-align: center; border-bottom: 5px solid var(--secondary); box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        .header h2 { margin: 0; font-size: 1.4rem; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; }
 
         .container { max-width: 800px; margin: 20px auto; padding: 0 15px; }
         
-        /* Driver Info Card */
+        /* Card Style */
         .card { background: white; padding: 15px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        .form-row { display: flex; gap: 10px; margin-bottom: 10px; }
-        .form-group { flex: 1; }
-        .form-group label { display: block; font-size: 0.8rem; color: #666; margin-bottom: 4px; font-weight: bold; }
-        .form-group input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 1rem; -webkit-appearance: none; }
         
+        /* Inputs */
+        .form-row { display: flex; gap: 10px; margin-bottom: 15px; }
+        .form-group { flex: 1; }
+        .form-group label { display: block; font-size: 0.85rem; color: #444; margin-bottom: 6px; font-weight: bold; }
+        .form-group input { width: 100%; padding: 12px; border: 2px solid #eee; border-radius: 10px; box-sizing: border-box; font-size: 1rem; -webkit-appearance: none; transition: border 0.2s; }
+        .form-group input:focus { border-color: var(--primary); outline: none; }
+        .required-mark { color: red; margin-left: 3px; }
+
         /* Table Style */
-        .entry-row { display: flex; gap: 10px; margin-bottom: 8px; align-items: center; }
-        .entry-num { font-size: 0.8rem; color: #999; width: 20px; text-align: right; }
-        .inp-firma { flex: 2; }
-        .inp-betrag { flex: 1; text-align: right; font-weight: bold; }
+        .table-header { display: flex; gap: 10px; margin-bottom: 8px; font-size: 0.8rem; color: #777; font-weight: bold; padding: 0 5px; }
+        .lbl-firma { flex: 3; }
+        .lbl-betrag { flex: 1; text-align: right; }
+
+        .entry-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
+        .entry-num { font-size: 0.8rem; color: #bbb; width: 15px; }
+        
+        /* CUSTOM INPUT SIZES */
+        .inp-firma { 
+            flex: 3; 
+            padding: 12px; /* Comfortable padding */
+            height: 50px;  /* Taller width */
+            border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; box-sizing: border-box; 
+        }
+        .inp-betrag { 
+            flex: 1; 
+            padding: 5px; 
+            height: 38px; /* Shorter height as requested */
+            text-align: right; font-weight: bold; 
+            border: 1px solid #ddd; border-radius: 8px; font-size: 1rem; box-sizing: border-box;
+        }
 
         /* Calculation Section */
         .calc-box { background: #e8f5e9; padding: 15px; border-radius: 12px; border: 1px solid #c8e6c9; }
@@ -39,34 +60,34 @@
 
         /* Signature */
         .sig-box { margin-top: 20px; text-align: center; }
-        canvas { border: 2px dashed #ccc; border-radius: 10px; background: white; touch-action: none; width: 100%; height: 150px; }
-        .btn-clear { background: #999; color: white; border: none; padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; margin-top: 5px; }
+        canvas { border: 2px dashed #ccc; border-radius: 10px; background: white; touch-action: none; width: 100%; height: 150px; cursor: crosshair; }
+        .btn-clear { background: #999; color: white; border: none; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; margin-top: 5px; cursor: pointer; }
 
         /* Actions */
-        .actions { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); display: flex; gap: 10px; justify-content: space-around; }
-        .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .actions { position: fixed; bottom: 0; left: 0; right: 0; background: white; padding: 15px; box-shadow: 0 -2px 10px rgba(0,0,0,0.1); display: flex; gap: 10px; justify-content: space-around; z-index: 100; }
+        .btn { flex: 1; padding: 14px; border: none; border-radius: 12px; font-weight: bold; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         .btn-pdf { background: var(--primary); color: white; }
         .btn-email { background: var(--secondary); color: white; }
+        .btn:active { transform: scale(0.98); }
         
-        .upload-box { margin-top: 20px; padding: 10px; border: 1px dashed #ccc; border-radius: 8px; text-align: center; background: white; }
+        .upload-box { margin-top: 20px; padding: 15px; border: 2px dashed #ccc; border-radius: 10px; text-align: center; background: #fff; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <h1>NIK TRANSPORT</h1>
-    <div style="font-size: 0.8rem; opacity: 0.9;">Tagesbericht / Abrechnung</div>
+    <h2>Tagesbericht / Abrechnung</h2>
 </div>
 
 <div class="container">
     <div class="card">
         <div class="form-group" style="margin-bottom:10px;">
-            <label>Fahrer Name (Driver)</label>
-            <input type="text" id="driverName" placeholder="Name...">
+            <label>Fahrer Name (Name) <span class="required-mark">*</span></label>
+            <input type="text" id="driverName" placeholder="...">
         </div>
         <div class="form-row">
             <div class="form-group">
-                <label>Kennzeichen (Plate)</label>
+                <label>Kennzeichen (Plate) <span class="required-mark">*</span></label>
                 <input type="text" id="plate" placeholder="ZH-...">
             </div>
             <div class="form-group">
@@ -77,7 +98,11 @@
     </div>
 
     <div class="card">
-        <h3 style="margin-top:0; color:var(--primary);">Kunden / Firmen</h3>
+        <div class="table-header">
+            <span class="lbl-firma">Firma / Kunde</span>
+            <span class="lbl-betrag">Betrag (CHF)</span>
+        </div>
+        
         <div id="rows-container">
             </div>
     </div>
@@ -107,29 +132,33 @@
     </div>
 
     <div class="sig-box">
-        <label style="font-weight:bold; color:#555;">Unterschrift (Signature)</label>
+        <label style="font-weight:bold; color:#555;">Unterschrift (Signature) <span class="required-mark">*</span></label>
         <canvas id="sigCanvas"></canvas>
         <button class="btn-clear" onclick="clearSig()">Löschen</button>
     </div>
 </div>
 
 <div class="actions">
-    <button class="btn btn-pdf" onclick="generatePDF()">
-        📄 PDF / Share
+    <button class="btn btn-pdf" onclick="sharePDF()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+        PDF / Share
     </button>
     <button class="btn btn-email" onclick="sendEmail()">
-        📧 Senden
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Senden
     </button>
 </div>
 
 <script>
+    let isSigned = false; // To track if signature exists
+
     // 1. Generate 15 Rows
     const rowsContainer = document.getElementById('rows-container');
     for (let i = 1; i <= 15; i++) {
         rowsContainer.innerHTML += `
         <div class="entry-row">
             <div class="entry-num">${i}.</div>
-            <input type="text" class="inp-firma" id="firma_${i}" placeholder="Firma...">
+            <input type="text" class="inp-firma" id="firma_${i}" placeholder="...">
             <input type="number" class="inp-betrag" id="betrag_${i}" placeholder="0.00" oninput="calcTotal()">
         </div>`;
     }
@@ -140,14 +169,12 @@
     // 3. Calculation Logic
     function calcTotal() {
         let sum = 0;
-        // Sum 15 rows
         for (let i = 1; i <= 15; i++) {
             let val = parseFloat(document.getElementById(`betrag_${i}`).value);
             if (!isNaN(val)) sum += val;
         }
         document.getElementById('bruttoSum').innerText = sum.toFixed(2);
 
-        // Deductions
         let tanken = parseFloat(document.getElementById('tanken').value) || 0;
         let auszahlung = parseFloat(document.getElementById('auszahlung').value) || 0;
 
@@ -161,7 +188,6 @@
     const ctx = canvas.getContext('2d');
     let drawing = false;
 
-    // Resize canvas for high DPI
     function resizeCanvas() {
         const ratio = Math.max(window.devicePixelRatio || 1, 1);
         canvas.width = canvas.offsetWidth * ratio;
@@ -171,56 +197,65 @@
     window.onresize = resizeCanvas;
     setTimeout(resizeCanvas, 100);
 
-    // Touch events
-    canvas.addEventListener('touchstart', (e) => {
+    // Drawing Events
+    function startDraw(e) {
         e.preventDefault();
         drawing = true;
-        const rect = canvas.getBoundingClientRect();
+        isSigned = true; // Mark as signed
+        const pos = getPos(e);
         ctx.beginPath();
-        ctx.moveTo(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top);
-    }, {passive: false});
-
-    canvas.addEventListener('touchmove', (e) => {
+        ctx.moveTo(pos.x, pos.y);
+    }
+    function moveDraw(e) {
         e.preventDefault();
         if (!drawing) return;
+        const pos = getPos(e);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+    }
+    function endDraw() { drawing = false; }
+    function getPos(e) {
         const rect = canvas.getBoundingClientRect();
-        ctx.lineTo(e.touches[0].clientX - rect.left, e.touches[0].clientY - rect.top);
-        ctx.stroke();
-    }, {passive: false});
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return { x: clientX - rect.left, y: clientY - rect.top };
+    }
 
-    canvas.addEventListener('touchend', () => drawing = false);
-
-    // Mouse events (for desktop testing)
-    canvas.addEventListener('mousedown', (e) => {
-        drawing = true;
-        ctx.beginPath();
-        ctx.moveTo(e.offsetX, e.offsetY);
-    });
-    canvas.addEventListener('mousemove', (e) => {
-        if (!drawing) return;
-        ctx.lineTo(e.offsetX, e.offsetY);
-        ctx.stroke();
-    });
-    canvas.addEventListener('mouseup', () => drawing = false);
+    canvas.addEventListener('touchstart', startDraw, {passive: false});
+    canvas.addEventListener('touchmove', moveDraw, {passive: false});
+    canvas.addEventListener('touchend', endDraw);
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', moveDraw);
+    canvas.addEventListener('mouseup', endDraw);
 
     function clearSig() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        isSigned = false;
     }
 
-    // 5. PDF Generation
-    async function generatePDF() {
+    // Validation Function
+    function validateForm() {
+        const name = document.getElementById('driverName').value.trim();
+        const plate = document.getElementById('plate').value.trim();
+        
+        if (!name) { alert("Bitte Fahrer Name eingeben!"); return false; }
+        if (!plate) { alert("Bitte Kennzeichen eingeben!"); return false; }
+        if (!isSigned) { alert("Bitte unterschreiben!"); return false; }
+        return true;
+    }
+
+    // 5. PDF Generation & Share
+    async function generatePDFObject() {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-
-        // Colors
-        const primaryColor = [26, 35, 126]; // #1a237e
+        const primaryColor = [26, 35, 126];
 
         // Header
         doc.setFillColor(...primaryColor);
         doc.rect(0, 0, 210, 20, 'F');
         doc.setTextColor(255, 255, 255);
         doc.setFontSize(16);
-        doc.text("NIK TRANSPORT - ABRECHNUNG", 105, 13, { align: "center" });
+        doc.text("TAGESBERICHT / ABRECHNUNG", 105, 13, { align: "center" });
 
         // Info
         doc.setTextColor(0, 0, 0);
@@ -243,7 +278,6 @@
             }
         }
 
-        // AutoTable
         doc.autoTable({
             startY: 45,
             head: [['#', 'Firma / Kunde', 'Betrag (CHF)']],
@@ -254,14 +288,12 @@
         });
 
         let finalY = doc.lastAutoTable.finalY + 10;
-
-        // Totals
         const calcs = calcTotal();
         doc.setFontSize(11);
         doc.text(`Brutto Total:`, 140, finalY);
         doc.text(`${calcs.sum.toFixed(2)}`, 190, finalY, { align: "right" });
         
-        doc.setTextColor(200, 0, 0); // Red
+        doc.setTextColor(200, 0, 0);
         doc.text(`- Tanken:`, 140, finalY + 6);
         doc.text(`${calcs.tanken.toFixed(2)}`, 190, finalY + 6, { align: "right" });
         doc.text(`- Auszahlung:`, 140, finalY + 12);
@@ -272,9 +304,8 @@
         doc.setFont("helvetica", "bold");
         doc.text(`NETTO: ${calcs.netto.toFixed(2)} CHF`, 190, finalY + 22, { align: "right" });
 
-        // Add Signature
         const sigImg = canvas.toDataURL('image/png');
-        if (sigImg && sigImg.length > 500) { // Check if not empty (rough check)
+        if (isSigned) {
             doc.text("Unterschrift:", 14, finalY + 30);
             doc.addImage(sigImg, 'PNG', 14, finalY + 32, 50, 25);
         }
@@ -282,27 +313,44 @@
         return doc;
     }
 
-    // Helper: Trigger PDF download/share
     async function sharePDF() {
-        const doc = await generatePDF();
-        doc.save("Abrechnung.pdf");
+        if (!validateForm()) return;
+
+        const doc = await generatePDFObject();
+        const blob = doc.output('blob');
+        const file = new File([blob], "Abrechnung.pdf", { type: "application/pdf" });
+
+        // Try Native Share
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+                await navigator.share({
+                    files: [file],
+                    title: 'Abrechnung',
+                    text: 'Hier ist meine Abrechnung.'
+                });
+            } catch (err) {
+                console.log("Share failed/cancelled", err);
+            }
+        } else {
+            // Fallback for Desktop
+            doc.save("Abrechnung.pdf");
+        }
     }
 
     // 6. Send Email Logic
     async function sendEmail() {
+        if (!validateForm()) return;
+
         const btn = document.querySelector('.btn-email');
-        const oldText = btn.innerText;
-        btn.innerText = "Senden...";
+        const oldText = btn.innerHTML;
+        btn.innerHTML = "Senden...";
         btn.disabled = true;
 
         const name = document.getElementById('driverName').value;
         const date = document.getElementById('date').value;
-        
-        if(!name) { alert("Bitte Namen eingeben!"); btn.innerText=oldText; btn.disabled=false; return; }
 
         try {
-            // Generate PDF Blob
-            const doc = await generatePDF();
+            const doc = await generatePDFObject();
             const pdfBlob = doc.output('blob');
             
             const formData = new FormData();
@@ -310,34 +358,28 @@
             formData.append("access_key", "817b5739-ed89-4340-9674-57d210b081b7"); 
             
             formData.append("subject", `Abrechnung: ${name} - ${date}`);
-            formData.append("message", `Hallo,\n\nanbei die tägliche Abrechnung von ${name}.\nDatum: ${date}\n\nNetto: ${document.getElementById('nettoSum').innerText} CHF`);
-            
-            // Attach PDF
-            formData.append("attachment", pdfBlob, `Abrechnung_${name}_${date}.pdf`);
+            formData.append("message", `Fahrer: ${name}\nDatum: ${date}\nNetto: ${document.getElementById('nettoSum').innerText} CHF`);
+            formData.append("attachment", pdfBlob, `Abrechnung_${name}.pdf`);
 
-            // Attach Photo if selected
             const fileInput = document.getElementById('attachment');
             if(fileInput.files.length > 0) {
                 formData.append("attachment2", fileInput.files[0]);
             }
 
             const res = await fetch("https://api.web3forms.com/submit", { method: "POST", body: formData });
-            
             if (res.ok) {
                 alert("✅ Erfolgreich gesendet!");
+                // clearSig(); // Optional: reset after send
             } else {
                 alert("❌ Fehler beim Senden.");
             }
-
         } catch (e) {
-            console.error(e);
             alert("Fehler.");
         }
-        btn.innerText = oldText;
+        btn.innerHTML = oldText;
         btn.disabled = false;
     }
 </script>
 
 </body>
-
 </html>
